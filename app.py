@@ -115,7 +115,7 @@ else:
 
 st.info("Выберите операцию, укажите количество и при необходимости добавьте короткий комментарий.")
 
-with st.form("submit_work_form"):
+with st.form("submit_work_form", clear_on_submit=True):
     operation_label = st.selectbox("Операция", list(OPERATIONS.keys()))
     quantity = st.number_input("Количество", min_value=1, step=1)
 
