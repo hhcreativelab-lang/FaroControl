@@ -73,14 +73,45 @@ if not profile_data.get("success"):
     st.error(profile_data.get("message", "Личная ссылка не найдена."))
     st.stop()
 
-worker_name = profile_data.get("worker_name", "")
+worker_name = profile_data.get("worker_name", "").strip()
 
+# Шафрановый блок приветствия
 if worker_name:
-    st.success(f"Здравствуйте, {worker_name}!")
-    st.caption("Это ваша личная форма сдачи работы.")
+    st.markdown(
+        f"""
+        <div style="
+            background-color: #FFF3CD;
+            color: #5C4300;
+            padding: 16px 18px;
+            border-radius: 10px;
+            border: 1px solid #FFE08A;
+            margin-bottom: 18px;
+            font-size: 16px;
+        ">
+            <b>Здравствуйте, {worker_name}!</b><br>
+            Это ваша личная форма сдачи работы.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 else:
-    st.success("Здравствуйте!")
-    st.caption("Это ваша личная форма сдачи работы.")
+    st.markdown(
+        """
+        <div style="
+            background-color: #FFF3CD;
+            color: #5C4300;
+            padding: 16px 18px;
+            border-radius: 10px;
+            border: 1px solid #FFE08A;
+            margin-bottom: 18px;
+            font-size: 16px;
+        ">
+            <b>Здравствуйте!</b><br>
+            Это ваша личная форма сдачи работы.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 st.info("Выберите операцию, укажите количество и при необходимости добавьте короткий комментарий.")
 
