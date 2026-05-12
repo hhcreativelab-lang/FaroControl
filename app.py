@@ -7,8 +7,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# Пока используем TEST webhook.
-# Позже заменим на Production URL.
 WEBHOOK_URL = st.secrets["WEBHOOK_URL"]
 
 OPERATIONS = {
@@ -25,22 +23,34 @@ OPERATIONS = {
 st.title("FaroControl")
 st.subheader("Учёт выработки")
 
-st.info("Введите код сотрудника, PIN, выберите операцию и укажите количество.")
+token = st.query_params.get("token", "")
+
+if not token:
+    st.error("Личная ссылка не найдена.")
+    st.info("Откройте форму по личной ссылке сотрудника.")
+    st.stop()
+
+st.info("Выберите операцию, укажите количество и при необходимости добавьте короткий комментарий.")
 
 with st.form("submit_work_form"):
-    worker_id = st.text_input("Код сотрудника", placeholder="Например: W001")
-    pin = st.text_input("PIN", placeholder="Например: 4821", type="password")
     operation_label = st.selectbox("Операция", list(OPERATIONS.keys()))
     quantity = st.number_input("Количество", min_value=1, step=1)
+
+    comment = st.text_area(
+        "Комментарий",
+        placeholder="Например: осталось 2 детали, лежат на столе.",
+        max_chars=200,
+        height=90
+    )
 
     submitted = st.form_submit_button("Сдать работу")
 
 if submitted:
     payload = {
-        "worker_id": worker_id.strip().upper(),
-        "pin": pin.strip(),
+        "token": token.strip(),
         "operation_id": OPERATIONS[operation_label],
         "quantity": int(quantity),
+        "comment": comment.strip(),
     }
 
     try:
@@ -63,5 +73,4 @@ if submitted:
         st.text(str(e))
 
 st.divider()
-
 st.caption("FaroControl · Web-форма учёта выработки")
