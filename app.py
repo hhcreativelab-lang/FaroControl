@@ -10,12 +10,10 @@ st.set_page_config(
 st.title("FaroControl")
 st.subheader("Учёт выработки")
 
-# Безопасно получаем WEBHOOK_URL из Secrets
 WEBHOOK_URL = st.secrets.get("WEBHOOK_URL", "")
 
 if not WEBHOOK_URL:
     st.error("WEBHOOK_URL не найден в Streamlit Secrets.")
-    st.info('Проверьте Settings → Secrets. Там должно быть: WEBHOOK_URL = "https://hhfaro.app.n8n.cloud/webhook/web-submit-work"')
     st.stop()
 
 OPERATIONS = {
@@ -29,7 +27,6 @@ OPERATIONS = {
     "OP008 — Упаковка органайзеров — 3 ₽": "OP008",
 }
 
-# Безопасно получаем token из ссылки
 try:
     token = st.query_params.get("token", "")
 except Exception:
@@ -44,6 +41,46 @@ if not token:
     st.error("Личная ссылка не найдена.")
     st.info("Откройте форму по личной ссылке сотрудника.")
     st.stop()
+
+# Получаем имя сотрудника по token
+try:
+    profile_response = requests.post(
+        WEBHOOK_URL,
+        json={
+            "action": "profile",
+            "token": token,
+        },
+        timeout=20
+    )
+
+    if profile_response.status_code != 200:
+        st.error(f"Ошибка сервера при проверке ссылки: {profile_response.status_code}")
+        st.text(profile_response.text)
+        st.stop()
+
+    profile_data = profile_response.json()
+
+except requests.exceptions.RequestException as e:
+    st.error("Не удалось проверить личную ссылку.")
+    st.text(str(e))
+    st.stop()
+except Exception as e:
+    st.error("Сервер вернул некорректный ответ при проверке ссылки.")
+    st.text(str(e))
+    st.stop()
+
+if not profile_data.get("success"):
+    st.error(profile_data.get("message", "Личная ссылка не найдена."))
+    st.stop()
+
+worker_name = profile_data.get("worker_name", "")
+
+if worker_name:
+    st.success(f"Здравствуйте, {worker_name}!")
+    st.caption("Это ваша личная форма сдачи работы.")
+else:
+    st.success("Здравствуйте!")
+    st.caption("Это ваша личная форма сдачи работы.")
 
 st.info("Выберите операцию, укажите количество и при необходимости добавьте короткий комментарий.")
 
@@ -62,6 +99,7 @@ with st.form("submit_work_form"):
 
 if submitted:
     payload = {
+        "action": "submit",
         "token": token,
         "operation_id": OPERATIONS[operation_label],
         "quantity": int(quantity),
