@@ -7,7 +7,16 @@ st.set_page_config(
     layout="centered"
 )
 
-WEBHOOK_URL = st.secrets["WEBHOOK_URL"]
+st.title("FaroControl")
+st.subheader("Учёт выработки")
+
+# Безопасно получаем WEBHOOK_URL из Secrets
+WEBHOOK_URL = st.secrets.get("WEBHOOK_URL", "")
+
+if not WEBHOOK_URL:
+    st.error("WEBHOOK_URL не найден в Streamlit Secrets.")
+    st.info('Проверьте Settings → Secrets. Там должно быть: WEBHOOK_URL = "https://hhfaro.app.n8n.cloud/webhook/web-submit-work"')
+    st.stop()
 
 OPERATIONS = {
     "OP001 — Заготовка органайзеров / дно — 10 ₽": "OP001",
@@ -20,10 +29,16 @@ OPERATIONS = {
     "OP008 — Упаковка органайзеров — 3 ₽": "OP008",
 }
 
-st.title("FaroControl")
-st.subheader("Учёт выработки")
+# Безопасно получаем token из ссылки
+try:
+    token = st.query_params.get("token", "")
+except Exception:
+    token = st.experimental_get_query_params().get("token", [""])[0]
 
-token = st.query_params.get("token", "")
+if isinstance(token, list):
+    token = token[0] if token else ""
+
+token = str(token).strip()
 
 if not token:
     st.error("Личная ссылка не найдена.")
@@ -47,7 +62,7 @@ with st.form("submit_work_form"):
 
 if submitted:
     payload = {
-        "token": token.strip(),
+        "token": token,
         "operation_id": OPERATIONS[operation_label],
         "quantity": int(quantity),
         "comment": comment.strip(),
@@ -60,11 +75,16 @@ if submitted:
             st.error(f"Ошибка сервера: {response.status_code}")
             st.text(response.text)
         else:
-            data = response.json()
+            try:
+                data = response.json()
+            except Exception:
+                st.error("Сервер ответил не JSON-форматом.")
+                st.text(response.text)
+                st.stop()
 
             if data.get("success"):
                 st.success("Работа сохранена")
-                st.write(data.get("message", "Сохранено"))
+                st.write(data.get("text", data.get("message", "Сохранено")))
             else:
                 st.error(data.get("message", "Ошибка отправки"))
 
