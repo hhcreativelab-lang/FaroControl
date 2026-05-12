@@ -9,7 +9,7 @@ st.set_page_config(
 
 # Пока используем TEST webhook.
 # Позже заменим на Production URL.
-WEBHOOK_URL = "https://hhfaro.app.n8n.cloud/webhook-test/web-submit-work"
+WEBHOOK_URL = st.secrets["WEBHOOK_URL"]
 
 OPERATIONS = {
     "OP001 — Заготовка органайзеров / дно — 10 ₽": "OP001",
