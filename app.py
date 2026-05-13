@@ -353,6 +353,8 @@ if salary_clicked:
         else:
             try:
                 salary_data = salary_response.json()
+                st.write("DEBUG salary_data:")
+                st.json(salary_data)
             except Exception:
                 st.error("Сервер ответил не JSON-форматом.")
                 st.text(salary_response.text)
