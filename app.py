@@ -83,57 +83,6 @@ st.markdown(
             margin-bottom: 12px;
         }
 
-        .salary-card {
-            background: linear-gradient(135deg, #effaf2 0%, #ffffff 100%);
-            border: 1px solid #bde7c8;
-            border-radius: 16px;
-            padding: 18px;
-            margin-top: 16px;
-            margin-bottom: 18px;
-            color: #163b22;
-            box-shadow: 0 8px 20px rgba(22, 59, 34, 0.06);
-        }
-
-        .salary-card-title {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 14px;
-            color: #163b22;
-        }
-
-        .salary-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(22, 59, 34, 0.12);
-            font-size: 16px;
-            line-height: 1.4;
-        }
-
-        .salary-row:last-child {
-            border-bottom: none;
-        }
-
-        .salary-label {
-            color: #244b30;
-            font-weight: 600;
-        }
-
-        .salary-value {
-            color: #10291a;
-            font-weight: 800;
-            text-align: right;
-            white-space: nowrap;
-        }
-
-        .salary-note {
-            color: #496b55;
-            font-size: 14px;
-            margin-top: 14px;
-            line-height: 1.5;
-        }
-
         .hh-footer {
             text-align: center;
             color: #8a8496;
@@ -181,14 +130,6 @@ st.markdown(
 
             .hh-subtitle {
                 font-size: 16px;
-            }
-
-            .salary-row {
-                font-size: 15px;
-            }
-
-            .salary-card {
-                padding: 16px;
             }
         }
     </style>
@@ -419,40 +360,23 @@ if salary_clicked:
                 week_start = salary_data.get("week_start", "")
                 week_end = salary_data.get("week_end", "")
 
-                st.markdown(
-                    f"""
-                    <div class="salary-card">
-                        <div class="salary-card-title">Начисления для {worker_name}</div>
-
-                        <div class="salary-row">
-                            <span class="salary-label">Сегодня</span>
-                            <span class="salary-value">{format_money(today_amount)}</span>
-                        </div>
-
-                        <div class="salary-row">
-                            <span class="salary-label">Текущая неделя</span>
-                            <span class="salary-value">{format_money(week_amount)}</span>
-                        </div>
-
-                        <div class="salary-row">
-                            <span class="salary-label">Текущий месяц</span>
-                            <span class="salary-value">{format_money(month_amount)}</span>
-                        </div>
-
-                        <div class="salary-row">
-                            <span class="salary-label">Всего записей</span>
-                            <span class="salary-value">{records_count}</span>
-                        </div>
-
-                        <div class="salary-note">
-                            Всего по всем найденным записям: <b>{format_money(total_amount)}</b><br>
-                            {f"Сегодня: {today_date}<br>" if today_date else ""}
-                            {f"Неделя: {week_start} — {week_end}" if week_start and week_end else ""}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+                salary_text = (
+                    f"**Начисления для {worker_name}**\n\n"
+                    f"Сегодня: **{format_money(today_amount)}**\n\n"
+                    f"Текущая неделя: **{format_money(week_amount)}**\n\n"
+                    f"Текущий месяц: **{format_money(month_amount)}**\n\n"
+                    f"Всего записей: **{records_count}**\n\n"
+                    f"Всего по всем найденным записям: **{format_money(total_amount)}**"
                 )
+
+                if today_date or (week_start and week_end):
+                    salary_text += "\n\n---\n"
+                    if today_date:
+                        salary_text += f"Дата проверки: {today_date}\n\n"
+                    if week_start and week_end:
+                        salary_text += f"Период недели: {week_start} — {week_end}"
+
+                st.success(salary_text)
             else:
                 st.error(salary_data.get("message", "Не удалось проверить зарплату."))
 
