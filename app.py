@@ -254,7 +254,7 @@ st.markdown(
 # -----------------------------
 # Форма сдачи работы
 # -----------------------------
-st.markdown('<div class="hh-card">', unsafe_allow_html=True)
+
 
 with st.form("submit_work_form", clear_on_submit=True):
     operation_label = st.selectbox("Операция", list(OPERATIONS.keys()))
@@ -269,7 +269,7 @@ with st.form("submit_work_form", clear_on_submit=True):
 
     submitted = st.form_submit_button("Сдать работу")
 
-st.markdown("</div>", unsafe_allow_html=True)
+
 
 # -----------------------------
 # Отправка данных
