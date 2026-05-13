@@ -79,11 +79,11 @@ st.markdown(
             font-size: 20px;
             font-weight: 800;
             color: #211833;
-            margin-top: 22px;
+            margin-top: 24px;
             margin-bottom: 12px;
         }
 
-        .salary-box {
+        .salary-card {
             background: linear-gradient(135deg, #effaf2 0%, #ffffff 100%);
             border: 1px solid #bde7c8;
             border-radius: 16px;
@@ -94,26 +94,17 @@ st.markdown(
             box-shadow: 0 8px 20px rgba(22, 59, 34, 0.06);
         }
 
-        .salary-title {
+        .salary-card-title {
             font-size: 18px;
             font-weight: 800;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+            color: #163b22;
         }
 
-        .salary-row {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(22, 59, 34, 0.10);
-            padding: 8px 0;
-            font-size: 16px;
-        }
-
-        .salary-row:last-child {
-            border-bottom: none;
-        }
-
-        .salary-value {
-            font-weight: 800;
+        .salary-note {
+            color: #496b55;
+            font-size: 14px;
+            margin-top: 8px;
         }
 
         .hh-footer {
@@ -171,12 +162,14 @@ OPERATIONS = {
     "Упаковка органайзеров — 3 ₽": "OP008",
 }
 
+
 def format_money(value):
     try:
         amount = int(float(value))
     except Exception:
         amount = 0
     return f"{amount:,}".replace(",", " ") + " ₽"
+
 
 # -----------------------------
 # Верх страницы / логотип
@@ -372,34 +365,30 @@ if salary_clicked:
                 total_amount = salary_data.get("total_amount", 0)
                 records_count = salary_data.get("records_count", 0)
 
+                st.markdown('<div class="salary-card">', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="salary-card-title">Начисления для {worker_name}</div>',
+                    unsafe_allow_html=True
+                )
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Сегодня", format_money(today_amount))
+                    st.metric("Текущий месяц", format_money(month_amount))
+                with col2:
+                    st.metric("Текущая неделя", format_money(week_amount))
+                    st.metric("Всего записей", records_count)
+
                 st.markdown(
                     f"""
-                    <div class="salary-box">
-                        <div class="salary-title">Начисления для {worker_name}</div>
-
-                        <div class="salary-row">
-                            <span>Сегодня</span>
-                            <span class="salary-value">{format_money(today_amount)}</span>
-                        </div>
-
-                        <div class="salary-row">
-                            <span>Текущая неделя</span>
-                            <span class="salary-value">{format_money(week_amount)}</span>
-                        </div>
-
-                        <div class="salary-row">
-                            <span>Текущий месяц</span>
-                            <span class="salary-value">{format_money(month_amount)}</span>
-                        </div>
-
-                        <div class="salary-row">
-                            <span>Всего записей</span>
-                            <span class="salary-value">{records_count}</span>
-                        </div>
+                    <div class="salary-note">
+                        Всего по всем найденным записям: <b>{format_money(total_amount)}</b>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
+                st.markdown("</div>", unsafe_allow_html=True)
+
             else:
                 st.error(salary_data.get("message", "Не удалось проверить зарплату."))
 
