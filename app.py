@@ -138,7 +138,22 @@ st.markdown('<div class="hh-header">', unsafe_allow_html=True)
 logo_path = "hhfaro_logo_purple.png"
 
 if os.path.exists(logo_path):
-    st.image(logo_path, width=280)
+    st.markdown(
+        """
+        <div style="
+            text-align:center;
+            font-size:11px;
+            letter-spacing:2px;
+            color:rgba(95, 88, 112, 0.45);
+            font-weight:700;
+            margin-bottom:4px;
+        ">
+            BY HH FARO
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.image(logo_path, width=180)
 
 st.markdown(
     """
