@@ -144,47 +144,45 @@ if not WEBHOOK_URL:
     st.stop()
 
 # -----------------------------
-# Новые операции по направлениям
+# Реальные операции FaroControl
+# Все сотрудники видят все операции.
+# Направление сотрудника НЕ ограничивает выбор операции.
 # -----------------------------
 OPERATIONS = {
-    "Прямострочка": {
-        "Органайзер дно — заготовка — 5 ₽": {
-            "id": "OP001",
-            "needs_dogs": True,
-            "hint": "Укажите количество изделий и количество собачек. Собачки здесь учитываются, но отдельно не оплачиваются.",
-        },
-        "Органайзер бок — заготовка — 4 ₽": {
-            "id": "OP002",
-            "needs_dogs": False,
-            "hint": "Укажите количество изделий.",
-        },
-        "Картон — вставка — 2 ₽": {
-            "id": "OP005",
-            "needs_dogs": False,
-            "hint": "Укажите количество вставленного картона.",
-        },
-        "Кофр — заготовка — 18 ₽ + собачка 1 ₽": {
-            "id": "OP006",
-            "needs_dogs": True,
-            "hint": "Укажите количество изделий и количество собачек. Собачки оплачиваются отдельно по 1 ₽.",
-        },
+    "Органайзер дно — заготовка — 5 ₽": {
+        "id": "OP001",
+        "needs_dogs": True,
+        "hint": "Укажите количество изделий и количество собачек. Собачки здесь учитываются, но отдельно не оплачиваются.",
     },
-    "Окантовщики": {
-        "Органайзер дно — окантовка — 7 ₽": {
-            "id": "OP003",
-            "needs_dogs": False,
-            "hint": "Укажите количество изделий.",
-        },
-        "Органайзер верх — окантовка — 6 ₽": {
-            "id": "OP004",
-            "needs_dogs": False,
-            "hint": "Укажите количество изделий.",
-        },
-        "Кофр — окантовка — 24 ₽": {
-            "id": "OP007",
-            "needs_dogs": False,
-            "hint": "Укажите количество изделий.",
-        },
+    "Органайзер бок — заготовка — 4 ₽": {
+        "id": "OP002",
+        "needs_dogs": False,
+        "hint": "Укажите количество изделий.",
+    },
+    "Органайзер дно — окантовка — 7 ₽": {
+        "id": "OP003",
+        "needs_dogs": False,
+        "hint": "Укажите количество изделий.",
+    },
+    "Органайзер верх — окантовка — 6 ₽": {
+        "id": "OP004",
+        "needs_dogs": False,
+        "hint": "Укажите количество изделий.",
+    },
+    "Картон — вставка — 2 ₽": {
+        "id": "OP005",
+        "needs_dogs": False,
+        "hint": "Укажите количество вставленного картона.",
+    },
+    "Кофр — заготовка — 18 ₽ + собачка 1 ₽": {
+        "id": "OP006",
+        "needs_dogs": True,
+        "hint": "Укажите количество изделий и количество собачек. Собачки оплачиваются отдельно по 1 ₽.",
+    },
+    "Кофр — окантовка — 24 ₽": {
+        "id": "OP007",
+        "needs_dogs": False,
+        "hint": "Укажите количество изделий.",
     },
 }
 
@@ -195,10 +193,6 @@ def format_money(value):
     except Exception:
         amount = 0
     return f"{amount:,}".replace(",", " ") + " ₽"
-
-
-def normalize_direction(value):
-    return str(value or "").strip()
 
 
 def get_token_from_url():
@@ -278,37 +272,30 @@ if not profile_data.get("success"):
     st.stop()
 
 worker_name = str(profile_data.get("worker_name", "")).strip()
-worker_direction = normalize_direction(profile_data.get("direction", ""))
-
-if not worker_direction:
-    st.error("У сотрудника не указано направление. Обратитесь к ответственному.")
-    st.stop()
-
-if worker_direction not in OPERATIONS:
-    st.error(f"Для направления '{worker_direction}' не настроены операции.")
-    st.stop()
+worker_direction = str(profile_data.get("direction", "")).strip()
 
 # -----------------------------
 # Приветствие
 # -----------------------------
 if worker_name:
+    direction_line = f"<br>Направление: <b>{worker_direction}</b>" if worker_direction else ""
+
     st.markdown(
         f"""
         <div class="hh-greeting">
             <b>Здравствуйте, {worker_name}!</b><br>
-            Это ваша личная форма сдачи работы.<br>
-            Направление: <b>{worker_direction}</b>
+            Это ваша личная форма сдачи работы.
+            {direction_line}
         </div>
         """,
         unsafe_allow_html=True
     )
 else:
     st.markdown(
-        f"""
+        """
         <div class="hh-greeting">
             <b>Здравствуйте!</b><br>
-            Это ваша личная форма сдачи работы.<br>
-            Направление: <b>{worker_direction}</b>
+            Это ваша личная форма сдачи работы.
         </div>
         """,
         unsafe_allow_html=True
@@ -328,14 +315,15 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-available_operations = OPERATIONS[worker_direction]
-operation_labels = list(available_operations.keys())
+operation_labels = list(OPERATIONS.keys())
 
 with st.form("submit_work_form", clear_on_submit=True):
     operation_label = st.selectbox("Операция", operation_labels)
-    operation_data = available_operations[operation_label]
+    operation_data = OPERATIONS[operation_label]
 
-    st.caption(operation_data.get("hint", ""))
+    hint = operation_data.get("hint", "")
+    if hint:
+        st.caption(hint)
 
     quantity = st.number_input(
         "Количество изделий",
