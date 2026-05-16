@@ -143,15 +143,49 @@ if not WEBHOOK_URL:
     st.error("WEBHOOK_URL не найден в Streamlit Secrets.")
     st.stop()
 
+# -----------------------------
+# Новые операции по направлениям
+# -----------------------------
 OPERATIONS = {
-    "Заготовка органайзеров — дно — 10 ₽": "OP001",
-    "Заготовка органайзеров — бок — 8 ₽": "OP002",
-    "Окантовка органайзеров — дно — 7 ₽": "OP003",
-    "Окантовка органайзеров — верх — 6 ₽": "OP004",
-    "Заготовка кофр — 12 ₽": "OP005",
-    "Окантовка кофр — 24 ₽": "OP006",
-    "Упаковка кофр — 3 ₽": "OP007",
-    "Упаковка органайзеров — 3 ₽": "OP008",
+    "Прямострочка": {
+        "Органайзер дно — заготовка — 5 ₽": {
+            "id": "OP001",
+            "needs_dogs": True,
+            "hint": "Укажите количество изделий и количество собачек. Собачки здесь учитываются, но отдельно не оплачиваются.",
+        },
+        "Органайзер бок — заготовка — 4 ₽": {
+            "id": "OP002",
+            "needs_dogs": False,
+            "hint": "Укажите количество изделий.",
+        },
+        "Картон — вставка — 2 ₽": {
+            "id": "OP005",
+            "needs_dogs": False,
+            "hint": "Укажите количество вставленного картона.",
+        },
+        "Кофр — заготовка — 18 ₽ + собачка 1 ₽": {
+            "id": "OP006",
+            "needs_dogs": True,
+            "hint": "Укажите количество изделий и количество собачек. Собачки оплачиваются отдельно по 1 ₽.",
+        },
+    },
+    "Окантовщики": {
+        "Органайзер дно — окантовка — 7 ₽": {
+            "id": "OP003",
+            "needs_dogs": False,
+            "hint": "Укажите количество изделий.",
+        },
+        "Органайзер верх — окантовка — 6 ₽": {
+            "id": "OP004",
+            "needs_dogs": False,
+            "hint": "Укажите количество изделий.",
+        },
+        "Кофр — окантовка — 24 ₽": {
+            "id": "OP007",
+            "needs_dogs": False,
+            "hint": "Укажите количество изделий.",
+        },
+    },
 }
 
 
@@ -161,6 +195,22 @@ def format_money(value):
     except Exception:
         amount = 0
     return f"{amount:,}".replace(",", " ") + " ₽"
+
+
+def normalize_direction(value):
+    return str(value or "").strip()
+
+
+def get_token_from_url():
+    try:
+        value = st.query_params.get("token", "")
+    except Exception:
+        value = st.experimental_get_query_params().get("token", [""])[0]
+
+    if isinstance(value, list):
+        value = value[0] if value else ""
+
+    return str(value).strip()
 
 
 # -----------------------------
@@ -187,15 +237,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 # -----------------------------
 # Получаем token из ссылки
 # -----------------------------
-try:
-    token = st.query_params.get("token", "")
-except Exception:
-    token = st.experimental_get_query_params().get("token", [""])[0]
-
-if isinstance(token, list):
-    token = token[0] if token else ""
-
-token = str(token).strip()
+token = get_token_from_url()
 
 if not token:
     st.error("Личная ссылка не найдена.")
@@ -203,7 +245,7 @@ if not token:
     st.stop()
 
 # -----------------------------
-# Получаем имя сотрудника по token
+# Получаем профиль сотрудника по token
 # -----------------------------
 try:
     profile_response = requests.post(
@@ -235,7 +277,16 @@ if not profile_data.get("success"):
     st.error(profile_data.get("message", "Личная ссылка не найдена."))
     st.stop()
 
-worker_name = profile_data.get("worker_name", "").strip()
+worker_name = str(profile_data.get("worker_name", "")).strip()
+worker_direction = normalize_direction(profile_data.get("direction", ""))
+
+if not worker_direction:
+    st.error("У сотрудника не указано направление. Обратитесь к ответственному.")
+    st.stop()
+
+if worker_direction not in OPERATIONS:
+    st.error(f"Для направления '{worker_direction}' не настроены операции.")
+    st.stop()
 
 # -----------------------------
 # Приветствие
@@ -245,17 +296,19 @@ if worker_name:
         f"""
         <div class="hh-greeting">
             <b>Здравствуйте, {worker_name}!</b><br>
-            Это ваша личная форма сдачи работы.
+            Это ваша личная форма сдачи работы.<br>
+            Направление: <b>{worker_direction}</b>
         </div>
         """,
         unsafe_allow_html=True
     )
 else:
     st.markdown(
-        """
+        f"""
         <div class="hh-greeting">
             <b>Здравствуйте!</b><br>
-            Это ваша личная форма сдачи работы.
+            Это ваша личная форма сдачи работы.<br>
+            Направление: <b>{worker_direction}</b>
         </div>
         """,
         unsafe_allow_html=True
@@ -269,15 +322,35 @@ st.markdown('<div class="hh-section-title">Сдать работу</div>', unsaf
 st.markdown(
     """
     <div class="hh-info">
-        Выберите операцию, укажите количество и при необходимости добавьте короткий комментарий.
+        Выберите операцию, укажите количество изделий и при необходимости количество собачек.
     </div>
     """,
     unsafe_allow_html=True
 )
 
+available_operations = OPERATIONS[worker_direction]
+operation_labels = list(available_operations.keys())
+
 with st.form("submit_work_form", clear_on_submit=True):
-    operation_label = st.selectbox("Операция", list(OPERATIONS.keys()))
-    quantity = st.number_input("Количество", min_value=1, step=1)
+    operation_label = st.selectbox("Операция", operation_labels)
+    operation_data = available_operations[operation_label]
+
+    st.caption(operation_data.get("hint", ""))
+
+    quantity = st.number_input(
+        "Количество изделий",
+        min_value=1,
+        step=1
+    )
+
+    dogs_quantity = 0
+
+    if operation_data.get("needs_dogs"):
+        dogs_quantity = st.number_input(
+            "Количество собачек",
+            min_value=0,
+            step=1
+        )
 
     comment = st.text_area(
         "Комментарий",
@@ -292,8 +365,9 @@ if submitted:
     payload = {
         "action": "submit",
         "token": token,
-        "operation_id": OPERATIONS[operation_label],
+        "operation_id": operation_data["id"],
         "quantity": int(quantity),
+        "dogs_quantity": int(dogs_quantity),
         "comment": comment.strip(),
     }
 
@@ -360,8 +434,10 @@ if salary_clicked:
                 week_start = salary_data.get("week_start", "")
                 week_end = salary_data.get("week_end", "")
 
+                salary_name = worker_name or salary_data.get("worker_name", "сотрудника")
+
                 salary_text = (
-                    f"**Начисления для {worker_name}**\n\n"
+                    f"**Начисления для {salary_name}**\n\n"
                     f"Сегодня: **{format_money(today_amount)}**\n\n"
                     f"Текущая неделя: **{format_money(week_amount)}**\n\n"
                     f"Текущий месяц: **{format_money(month_amount)}**\n\n"
